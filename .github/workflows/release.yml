@@ -1,0 +1,39 @@
+name: Release to PyPI
+
+# Publishes on a tagged release using PyPI Trusted Publishing (OIDC) — no API token
+# is stored in this repository. One-time setup on PyPI:
+#   pypi.org/manage/account/publishing → add a GitHub publisher with
+#   owner=lrvaka, repository=reel-maker, workflow=release.yml, environment=pypi
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install build
+      - run: python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write        # required for trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

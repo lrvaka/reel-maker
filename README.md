@@ -1,5 +1,9 @@
 # reel-maker
 
+[![CI](https://github.com/lrvaka/reel-maker/actions/workflows/ci.yml/badge.svg)](https://github.com/lrvaka/reel-maker/actions/workflows/ci.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+
 Turn landscape video into vertical reels **locally** — with a crop that actually follows the
 content instead of guessing at the middle.
 
