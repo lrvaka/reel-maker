@@ -153,6 +153,38 @@ ffmpeg -i in.mp4 -c:v libx264 -preset medium \
   -x264-params "nal-hrd=cbr:force-cfr=1" -pix_fmt yuv420p -c:a copy out.mp4
 ```
 
+## When tracking makes it worse
+
+Content-aware framing helps when the payload really is the dense, distinctive region of the
+frame. It **actively hurts** when the frame has competing regions that look equally important
+to a saliency map. The case that breaks it hardest:
+
+> **A screen-share of an app with symmetric chrome** — a left nav column, a content column,
+> and a right sidebar. All three are text-dense. Nothing in spectral saliency or OCR density
+> encodes "chrome versus content," so the crop can settle on the navigation menu and throw
+> away the thing you were pointing at.
+
+Tested on a real trading livestream sharing a social feed: the tracker framed the nav sidebar,
+and a plain `--mode center` crop was better at two of three sampled timestamps. Setting
+`--text-weight 0` barely moved the chosen centre (0.33 vs 0.35), which confirms it is not OCR
+chasing the menu — the saliency itself has no concept of chrome.
+
+**What to do instead, in order of effort:**
+
+1. **Try `--mode center` first** on any clip where the subject is already roughly centred.
+   Cheap to test, and often correct. Content-aware framing is not automatically an upgrade.
+2. **Run `--dump-shots` and read the chosen `cx`** before rendering. A `cx` far from where you
+   know the content sits is the warning sign.
+3. **Override the shots that are wrong** with an explicit `cx` in a shot list. Note that
+   overcorrecting is easy — on the clip above, `cx=0.58` overshot into the right sidebar.
+4. **If the subject is a person, use face detection instead.** This engine tracks visual
+   salience, not faces. For talking-head or interview footage, a face-aware pipeline will beat
+   it and no amount of `--text-weight` tuning closes that gap.
+
+The honest summary: this tool is tuned for **screen recordings where the payload is visually
+dominant** — dashboards, product demos, UI walkthroughs, title cards. Outside that, verify
+before you trust it.
+
 ## Limits
 
 - Tested on macOS and Linux. Windows is untested.

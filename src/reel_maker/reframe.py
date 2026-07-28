@@ -421,7 +421,8 @@ def shot_cover(sh, t, fit_cover):
 
 def render(path, out_path, mode, aspect, zoom, analyze_fps, text_weight,
            min_conf, min_shot_s, flat_thr, edge_thr, motion_thr, band_thr,
-           fill_cards, fill_zoom, overrides, dump_shots, crf, fallback="crop"):
+           fill_cards, fill_zoom, overrides, dump_shots, crf, fallback="crop",
+           cut_thresh=0.11):
     W, H, fps, dur = probe(path)
     aw, ah = (int(x) for x in aspect.split(":"))
     out_w, out_h = 1080, int(round(1080 * ah / aw))
@@ -439,7 +440,8 @@ def render(path, out_path, mode, aspect, zoom, analyze_fps, text_weight,
             total_frames = int(round((dur or 0) * fps))
     else:
         (t, profiles, cuts, flats, edges, motions, edgeflats,
-         nframes, sfps) = analyze(path, analyze_fps, text_weight, min_conf, use_ocr=True)
+         nframes, sfps) = analyze(path, analyze_fps, text_weight, min_conf, use_ocr=True,
+                                 cut_thresh=cut_thresh)
         if total_frames == 0:
             total_frames = nframes
             out_times = np.arange(total_frames) / fps
@@ -560,6 +562,11 @@ def main():
     ap.add_argument("--min-conf", type=float, default=45)
     ap.add_argument("--min-shot", type=float, default=0.6,
                     help="Merge scene cuts closer than this (seconds) to avoid twitchy reframes")
+    ap.add_argument("--cut-thresh", type=float, default=0.11,
+                    help="Scene-cut sensitivity (0-1). Cuts are found by comparing 32x18 "
+                         "GRAYSCALE thumbnails, so scenes differing in colour or layout but "
+                         "not overall brightness can be missed. Lower to 0.03-0.06 if several "
+                         "distinct scenes merge into one shot")
     ap.add_argument("--no-card-fill", action="store_true",
                     help="Disable text-card fit+extend; crop everything instead")
     ap.add_argument("--flat-thr", type=float, default=0.62,
@@ -594,7 +601,7 @@ def main():
         render(a.input, a.output, a.mode, a.aspect, a.zoom, a.analyze_fps,
                a.text_weight, a.min_conf, a.min_shot, a.flat_thr, a.edge_thr,
                a.motion_thr, a.band_thr, not a.no_card_fill, a.fill_zoom,
-               overrides, a.dump_shots, a.crf, a.fallback)
+               overrides, a.dump_shots, a.crf, a.fallback, a.cut_thresh)
     print(a.output)
 
 
