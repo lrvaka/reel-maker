@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reel-maker"
+version = "0.1.0"
+description = "Reframe landscape video to 9:16 locally — OCR/saliency-guided crop that keeps on-screen text in frame."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [{ name = "Luke Vakasisikakala" }]
+keywords = ["video", "ffmpeg", "opencv", "vertical-video", "reels", "shorts", "tiktok", "saliency", "ocr"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Video :: Conversion",
+]
+
+# Core install is pure-wheel: no compilers, no system Python packages.
+# ffmpeg/ffprobe are system prerequisites (see README).
+dependencies = [
+  "numpy>=1.21",
+  "opencv-python-headless>=4.6",
+]
+
+[project.optional-dependencies]
+# On-screen-text-aware tracking. Also needs the `tesseract` binary on PATH.
+ocr = ["pytesseract>=0.3.10"]
+# Whisper transcription + burn-in captions. Models download lazily on first use.
+captions = ["faster-whisper>=1.0"]
+all = ["reel-maker[ocr,captions]"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+reel-maker = "reel_maker.reframe:main"
+reel-maker-captions = "reel_maker.captions:main"
+
+[project.urls]
+Homepage = "https://github.com/lrvaka/reel-maker"
+Source = "https://github.com/lrvaka/reel-maker"
+Issues = "https://github.com/lrvaka/reel-maker/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/reel_maker"]

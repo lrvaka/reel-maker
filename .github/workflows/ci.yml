@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg tesseract-ocr
+
+      - name: Install package with all extras
+        run: pip install -e '.[ocr,dev]'
+
+      - name: Unit tests
+        run: pytest tests/ -v
+
+      # A real end-to-end render, not a --help smoke test: generate a synthetic
+      # 16:9 clip, reframe it, and assert the output is genuinely 1080x1920.
+      - name: End-to-end render
+        run: |
+          python scripts/make_demo_clip.py /tmp/src.mp4 --seconds 3
+          reel-maker /tmp/src.mp4 /tmp/out.mp4 --no-card-fill --fallback crop
+          dims=$(ffprobe -v error -select_streams v:0 \
+                   -show_entries stream=width,height -of csv=p=0 /tmp/out.mp4)
+          echo "output dimensions: $dims"
+          test "$dims" = "1080,1920"
+
+      # The core install is pure-wheel and must work with no OCR available at all.
+      - name: Verify graceful degradation without OCR
+        run: |
+          pip uninstall -y pytesseract
+          python scripts/make_demo_clip.py /tmp/src2.mp4 --seconds 2
+          reel-maker /tmp/src2.mp4 /tmp/out2.mp4 --no-card-fill --fallback crop 2>/tmp/err.txt
+          cat /tmp/err.txt
+          grep -q "OCR disabled" /tmp/err.txt
+          dims=$(ffprobe -v error -select_streams v:0 \
+                   -show_entries stream=width,height -of csv=p=0 /tmp/out2.mp4)
+          test "$dims" = "1080,1920"

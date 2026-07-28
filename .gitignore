@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.DS_Store
+
+# Working output — never commit rendered media
+out/
+work/
+*.mp4
+*.mov
+*.srt
+# ...except the demo assets we deliberately ship
+!.github/assets/*.mp4
