@@ -79,6 +79,16 @@ def text_mask(frame_bgr, min_conf):
             "the tesseract binary is not on PATH. Install it with "
             "`brew install tesseract` (macOS) or `apt install tesseract-ocr` (Debian/Ubuntu)."
         ) from e
+    except Exception as e:
+        # A tesseract that is installed but broken (bad TESSDATA_PREFIX, missing language
+        # data, a stripped environment) fails in assorted ways -- including a
+        # UnicodeDecodeError raised while pytesseract tries to decode tesseract's own
+        # error output. OCR is an enhancement, never a reason to lose the render, so any
+        # failure here degrades to saliency-only rather than propagating.
+        raise OcrUnavailable(
+            f"tesseract is installed but failed to run ({type(e).__name__}: {e}). "
+            "Check TESSDATA_PREFIX and that language data is installed."
+        ) from e
     mask = np.zeros((H, W), np.float32)
     for i in range(len(data["text"])):
         try:
